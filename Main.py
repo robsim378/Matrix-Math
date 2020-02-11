@@ -470,11 +470,14 @@ class Matrix:
         :return: The string representation of self.
         """
 
-        string = ''
+        string = '['
         for i in range(self.rows):
             for j in range(self.cols):
                 string += '{:^10}'.format(str(self.matrix[i][j]))
+            if i == self.rows - 1:
+                string += ']'
             string += '\n\n'
+
         return string
 
     def copy_matrix(self) -> Matrix:
@@ -505,7 +508,6 @@ class Matrix:
         # Special case if other is an int.
         if isinstance(other, int):
             other = Fraction(other, 1)
-
 
         result = self.copy_matrix()
         result.matrix[row - 1][col - 1] += other
@@ -561,7 +563,7 @@ class Matrix:
                 result.matrix[row][col] = 0
                 for i in range(self.cols):
                     result.matrix[row][col] += \
-                    self.matrix[row][i] * other.matrix[i][col]
+                        self.matrix[row][i] * other.matrix[i][col]
 
         return result
 
@@ -678,13 +680,15 @@ class Matrix:
             # If there is now a leading entry, sets it to 1 to serve as the
             # pivot by dividing the entire row by the leading entry.
             if result.matrix[row][col]:
-                result = result.multiply_row(row + 1, 1 / result.matrix[row][col])
+                result = result.multiply_row(row + 1, 1 /
+                                             result.matrix[row][col])
 
             # Eliminates all leading entries below the pivot by subtracting the
             # appropriate amount of the leading entry's row.
             for i in range(row + 1, result.rows):
                 if result.matrix[i][col]:
-                    result = result.add_row(i + 1, -result.matrix[i][col], row + 1)
+                    result = result.add_row(i + 1, -result.matrix[i][col],
+                                            row + 1)
 
             col += 1
 
@@ -703,10 +707,13 @@ class Matrix:
                 row -= 1
 
             # Checks if the entry in that row is a leading entry.
-            while col >= -result.cols:
-                if not result.matrix[row][col - 1]:
-                    return result
+            is_leading = True
+            while col >= -result.cols + 1:
+                if result.matrix[row][col - 1]:
+                    is_leading = False
                 col -= 1
+            if is_leading:
+                return result
 
         row = 0
         col = 1
@@ -730,11 +737,11 @@ class Matrix:
         Finds the solution for the system of linear equations defined by the
         Matrix self. Returns None if no solution, an n x 1 matrix for just one
         solution with n being the number of variables, and a list if there are
-        infinite solutions. The list consists of m lists containing the names
+        infinite solutions. The list consists of m lists containing the numbers
         of the independent variables and the vectors associated with them,
-        written as 1 x n Matrices, where m is the number of variables. The last
-        entry in the returned list will be a 1 x n matrix containing the
-        constants.
+        written as lists of length m, where m is the number of variables. The
+        last entry in the returned list will be another list of length m
+        containing the constants.
         :return: Either None, a 1 x n matrix, or a list. See above for details.
         """
         echelon_matrix = self.gaussian_elimination(True)
@@ -744,16 +751,89 @@ class Matrix:
 
         # checks if the matrix has a row with the leading entry in the last
         # column. If so, returns None.
-        while row >= -echelon_matrix.rows and not echelon_matrix.matrix[row][col]:
+        while row >= -echelon_matrix.rows \
+                and not echelon_matrix.matrix[row][col]:
             row -= 1
         if not echelon_matrix.matrix[row][col - 1]:
             return None
 
         row = 0
         col = 0
-        
-        while row < echelon_matrix.rows and col < echelon_matrix.cols:
-            TODO = True
+        independent = []
+
+        # Searches for columns in the reduced echelon form matrix representing
+        # independent variables and stores the number of the column in a list.
+        while col < echelon_matrix.cols - 1:
+            if row != echelon_matrix.rows and echelon_matrix.matrix[row][col]:
+                row += 1
+            else:
+                independent.append(col)
+            col += 1
+
+        # Creates the list that will be returned. The last element will be a
+        # list containing the constants
+        solution = []
+        for i in independent:
+            independent_vector = []
+            for j in range(echelon_matrix.rows):
+                if j == i:
+                    independent_vector.append(1)
+                else:
+                    independent_vector.append(-echelon_matrix.matrix[j][i])
+            solution.append([i, independent_vector])
+
+        # Adds a final list to the solution containing the constants.
+        constant_vector = []
+        for i in range(echelon_matrix.rows):
+            constant_vector.append(echelon_matrix.matrix[i][col])
+        solution.append(constant_vector)
+
+        return solution
+
+    @staticmethod
+    def output_solution(solution):
+        """
+        Takes a solution obtained by find_solution() and returns it as a
+        formatted string. If no solution exists, returns None
+        :param solution: The solution. For more details on the format, see the
+        documentation for find_solution().
+        :return: The solution formatted as a string or None.
+        """
+
+        # Deals with the possibility of no solution.
+        if solution is None:
+            return None
+
+        string = ''
+
+        for i in range(len(solution[-1])):
+
+            if i == 0:
+                string += '[{:^10}  = '.format('x' + str(i + 1))
+
+            elif i == len(solution[-1]) - 1:
+                string += ' {:^10}]    '.format('x' + str(i + 1))
+            else:
+                string += ' {:^10}    '.format('x' + str(i + 1))
+
+            for j in range(len(solution) - 1):
+                if i == 0:
+                    string += '{} [{:^10}   + '.format('x' + str(solution[j][0] + 1), str(solution[j][1][i]))
+                elif i == len(solution[-1]) - 1:
+                    string += '    {:^10}]  '.format(str(solution[j][1][i]))
+                else:
+                    string += '    {:^10}    '.format(str(solution[j][1][i]))
+
+            if i == 0:
+                string += '[{:^10}  '.format(str(solution[-1][i]))
+            elif i == len(solution[-1]) - 1:
+                string += '  {:^10} ]'.format(str(solution[-1][i]))
+            else:
+                string += '  {:^10}  '.format(str(solution[-1][i]))
+
+            string += '\n'
+
+        return string
 
     def store_value(self, value, row: int, col: int):
         """
@@ -793,17 +873,18 @@ test = Matrix(3, 4)
 test.matrix[0][0] = Fraction(1, 1)
 test.matrix[0][1] = Fraction(2, 1)
 test.matrix[0][2] = Fraction(1, 1)
-test.matrix[0][3] = Fraction(1, 1)
+test.matrix[0][3] = Fraction(4, 1)
 
 test.matrix[1][0] = Fraction(2, 1)
-test.matrix[1][1] = Fraction(3, 1)
-test.matrix[1][2] = Fraction(2, 1)
-test.matrix[1][3] = Fraction(0, 1)
+test.matrix[1][1] = Fraction(-1, 1)
+test.matrix[1][2] = Fraction(1, 1)
+test.matrix[1][3] = Fraction(2, 1)
 
-test.matrix[2][0] = Fraction(1, 1)
+test.matrix[2][0] = Fraction(3, 1)
 test.matrix[2][1] = Fraction(1, 1)
-test.matrix[2][2] = Fraction(1, 1)
-test.matrix[2][3] = Fraction(2, 1)
+test.matrix[2][2] = Fraction(2, 1)
+test.matrix[2][3] = Fraction(6, 1)
 
-print(test.gaussian_elimination(True))
 print(test)
+print(test.gaussian_elimination(True))
+print(Matrix.output_solution(test.find_solution()))
