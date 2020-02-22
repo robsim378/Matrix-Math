@@ -43,7 +43,7 @@ class Fraction:
     def __str__(self):
         """
         Defines the string representation of the Fraction, formatted as
-        "A / B", A being the numerator and B being the denominator
+        "A/B", A being the numerator and B being the denominator
         :return: The string representation of the Fraction.
         """
 
@@ -101,7 +101,7 @@ class Fraction:
         valid_input = False
         while not valid_input:
             value = input("Input value:")
-            numerator_imput = 0
+            numerator_input = 0
             first_entered = False
             sign = 1
             denominator_input = 0
@@ -122,8 +122,8 @@ class Fraction:
             # For every digit in the numerator, multiplies the value of
             # numerator_input by 10 and adds another digit.
             while i != len(value) and ord('0') <= ord(value[i]) <= ord('9'):
-                numerator_imput *= 10
-                numerator_imput += int(value[i])
+                numerator_input *= 10
+                numerator_input += int(value[i])
                 i += 1
                 first_entered = True
 
@@ -140,7 +140,7 @@ class Fraction:
             if i != len(value) and value[i] == '/':
                 i += 1
 
-                while i != len(value)  and value[i] == ' ':
+                while i != len(value) and value[i] == ' ':
                     i += 1
 
                 while i != len(value) and ord('0') <= ord(value[i]) <= ord('9'):
@@ -157,7 +157,7 @@ class Fraction:
             if not valid_input:
                 print("Invalid input")
 
-        return Fraction(sign * numerator_imput, denominator_input)
+        return Fraction(sign * numerator_input, denominator_input)
 
     def __add__(self, other) -> Fraction:
         """
