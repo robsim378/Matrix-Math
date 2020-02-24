@@ -51,6 +51,18 @@ class Matrix:
         self.solution_found = False
         self.solution = None
 
+    def __bool__(self):
+        """
+        Defines the boolean representation of a Matrix. A matrix is False if
+        all entries are 0, True otherwise.
+        :return: False if all entries are 0, True otherwise.
+        """
+        for row in range(self.rows):
+            for col in range(self.cols):
+                if self.matrix[row][col]:
+                    return False
+        return True
+
     def retrieve_determinant(self):
         """
         Returns the determinant of self if it has been found. If if has not
@@ -209,6 +221,77 @@ class Matrix:
         all cases where it is allowed. Same parameters as __mul__.
         """
         return self.__mul__(other)
+
+    def __pow__(self, power: int) -> Matrix:
+        """
+        Raises a Matrix to the power of an integer. For a matrix to be raised
+        to any power, it must be a square matrix (n x n). Returns the result of
+        the exponentiation. Overloads the ** operator.
+        :param power: The power to which the matrix is raised.
+        :return: The result of the exponentiation.
+        """
+
+        # A matrix can only be raised to the power of an integer.
+        if not isinstance(power, int):
+            raise TypeError
+
+        # For a Matrix to be raised to a power it must have the same number of
+        # rows as columns.
+        if self.rows != self.cols:
+            raise ValueError
+        result = Matrix(self.rows, self.cols)
+
+        # A matrix raised to the power of 0 is the identity matrix with the
+        # same dimensions as the original matrix.
+        if not power:
+            for row in range(self.rows):
+                for col in range(self.cols):
+                    if row == col:
+                        result.matrix[row][col] = 1
+        # A matrix raised to a positive power is is simply said matrix
+        # multiplied by itself n times (where n is the power).
+        elif power > 0:
+            result = self.copy_matrix()
+            for i in range(power):
+                result *= self
+        # A matrix raised to a negative power is the inverse of the matrix
+        # raised to the absolute value of the power.
+        else:
+            self.find_inverse()
+            result = self.retrieve_inverse() ** -power
+
+        return result
+
+    def __eq__(self, other: Matrix):
+        """
+        Checks to see if two Matrices are the same. If so, returns True. If
+        not, returns False. Overloads the == operator.
+        :param other: The Matrix being compared to self.
+        :return: True if the matrices are the same, False otherwise.
+        """
+        # Ensures that other is a Matrix
+        if not isinstance(other, Matrix):
+            raise TypeError
+
+        # If the Matrices have different dimensions, they cannot be equal.
+        if self.rows != other.rows or self.cols != other.cols:
+            return False
+
+        # Iterates through both matrixes and compares every individual entry.
+        for row in range(self.rows):
+            for col in range(self.cols):
+                if self.matrix[row][col] != other.matrix[row][col]:
+                    return False
+        return True
+
+    def __ne__(self, other):
+        """
+        Checks to see if two Matrices are the same. If so, returns False. If
+        not, returns True. Overloads the != operator.
+        :param other: The Matrix being compared to self.
+        :return: False if the matrices are the same, True otherwise.
+        """
+        return not self == other
 
     def swap_rows(self, first_row, second_row) -> Matrix:
         """
