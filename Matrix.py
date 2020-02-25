@@ -63,12 +63,12 @@ class Matrix:
                     return False
         return True
 
-    def retrieve_determinant(self):
+    def retrieve_determinant(self):                                     #TODO: include all of these in the functions that find the values.
         """
         Returns the determinant of self if it has been found. If if has not
         been found, returns False.
         :return: False if the determinant has not been found yet, None if there
-        is no determinant, or the determinant as an int if it has been found.
+        is no determinant, or the determinant as a Fraction if it exists.
         """
         if not self.determinant_found:
             return False
