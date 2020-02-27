@@ -62,18 +62,8 @@ class Matrix:
                 if self.matrix[row][col]:
                     return False
         return True
-
-    def retrieve_determinant(self):                                     #TODO: include all of these in the functions that find the values.
-        """
-        Returns the determinant of self if it has been found. If if has not
-        been found, returns False.
-        :return: False if the determinant has not been found yet, None if there
-        is no determinant, or the determinant as a Fraction if it exists.
-        """
-        if not self.determinant_found:
-            return False
-
-        return self.determinant
+        
+                                              # TODO: include all of these in the functions that find the values.
 
     def retrieve_inverse(self):
         """
@@ -367,27 +357,45 @@ class Matrix:
 
         return result
 
-    def find_determinant(self, factor: Fraction):                               # TODO: Make this more intuitive for the user to use.
+    def find_determinant_internal(self, factor: Fraction = None):
         """
+        NOTE: This method is used internally by other methods and contains
+        features not intended for users. Use find_determinant() instead.
+
         Returns the determinant of the matrix from which self, an echelon form
         Matrix, was computed. Determinant is only defined for a n x n Matrix.
         :return: The calculated determinant as a Fraction, or None if no
         determinant exists.
         """
 
+        if self.determinant_found:
+            return self.determinant
+
         # The determinant is only defined for n x n matrices.
         if self.rows != self.cols:
+            self.determinant_found = True
             return None
 
         # The determinant of a 2 x 2 matrix is ad - bc (a, b, c, d from left
         # to right, top to bottom.
 
         if self.rows == 2:
+            self.determinant_found = True
             return self.matrix[0][0] * self.matrix[1][1] \
                    - self.matrix[0][1] * self.matrix[1][0]
 
+        # If this method is called from anywhere other than
+        # gaussian_elimination_internal(), factor will be None. factor is
+        # needed to calculate the determinant so it will call
+        # gaussian_elimination_internal(), which will then call this method
+        # with the appropriate factor.
+        if factor is None:
+            return self.gaussian_elimination_internal(True, True)
+
         # Computes the determinant by summing the diagonal of the reduced
-        # echelon form matrix and multiplying it by factor.
+        # echelon form matrix and multiplying it by factor. This code can only
+        # be reached if the method is called from
+        # gaussian_elimination_internal.
         determinant = Fraction(1, 1)
         for i in range(self.rows):
             determinant *= self.matrix[i][i]
@@ -395,9 +403,21 @@ class Matrix:
 
         return determinant
 
-    def gaussian_elimination(self, stop_early_no_solution: bool = False,
-                             stop_early_determinant: bool = False):
+    def find_determinant(self):
         """
+        Returns the determinant of self if it exists as a Fraction, or None if
+        the determinant does not exist.
+        :return: The determinant of self as a fraction or None.
+        """
+        return self.find_determinant_internal()
+
+    def gaussian_elimination_internal(self,
+                                      stop_early_no_solution: bool = False,
+                                      stop_early_determinant: bool = False):
+        """
+        NOTE: This method is used internally by other methods and contains
+        features not intended for users. Use gaussian_elimination() instead.
+
         Returns either the row echelon form or the reduced row echelon form
         resulting from Gauss-Jordan elimination on self. If stop_early is True,
         the function will return the row echelon form if the leading entry in
@@ -408,7 +428,7 @@ class Matrix:
         :param stop_early_no_solution: Whether or not the algorithm stops after
         determining the row echelon form if there is no solution. Optional
         parameter, defaults to False.
-        :param stop_early_determinant: Whether or not the algorith stops after
+        :param stop_early_determinant: Whether or not the method stops after
         determining the row echelon form regardless of whether or not there is
         a solution. Used when calculating determinants.
         :return: The resulting Matrix, or None if stop_early_determinant is
@@ -461,9 +481,9 @@ class Matrix:
         # When calculating the determinant, there is no point in continuing
         # Gaussian elimination once an echelon form matrix has been computed.
         if stop_early_determinant:
-            self.determinant = result.find_determinant(det_factor)
+            self.determinant = result.find_determinant_internal(det_factor)
             self.determinant_found = True
-            return None
+            return self.determinant
 
         # If stop_early_no_solution is True, checks if the Matrix has no
         # solution. If so, returns the Matrix early without computing the
@@ -505,6 +525,13 @@ class Matrix:
         self.reduced_echelon_form = result
         return result
 
+    def gaussian_elimination(self) -> Matrix:
+        """
+        Returns the reduced row echelon form of self as a Matrix.
+        :return: The reduced row echelon form of self as a Matrix.
+        """
+        return self.gaussian_elimination()
+
     def find_solution(self):
         """
         Finds the solution for the system of linear equations defined by the
@@ -518,7 +545,7 @@ class Matrix:
         self.solution.
         :return: None
         """
-        echelon_matrix = self.gaussian_elimination(True)
+        echelon_matrix = self.gaussian_elimination_internal(True)
 
         col = -1
         row = -1
@@ -648,7 +675,7 @@ class Matrix:
                 else:
                     identity_appended.matrix[row][col] = 0
 
-        ref = identity_appended.gaussian_elimination(False)
+        ref = identity_appended.gaussian_elimination_internal(False)
 
         # Checks if the left side of the reduced echelon form matrix is an
         # identity matrix. If not, returns None.
