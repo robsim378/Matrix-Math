@@ -24,10 +24,8 @@ class Matrix:
         self.matrix = [[0] * cols for i in range(rows)]
 
         # The following values default to None, but are calculated as a result
-        # of certain methods in the class. These can be accessed safely by
-        # the retrieve_{value} methods (e.g. retrieve_determinant(), etc).
-
-                                        # TODO: Make these private and only allow the function to access them if the appropriate functions have been called.
+        # of certain methods in the class. These can be accessed by calling the
+        # functions detailed in each variable's comment.
 
         # Calculated by the find_determinant() method. If it exists, it is
         # stored as a Fraction.
@@ -62,46 +60,6 @@ class Matrix:
                 if self.matrix[row][col]:
                     return False
         return True
-        
-                                              # TODO: include all of these in the functions that find the values.
-
-    def retrieve_inverse(self):
-        """
-        Returns the inverse of self if it has been found. If if has not been
-        found, returns False.
-        :return: False if the inverse has not been found yet, None if there is
-        no inverse, or the inverse as a Matrix if it has been found.
-        """
-        if not self.inverse_found:
-            return False
-
-        return self.inverse
-
-    def retrieve_reduced_echelon_form_found(self):
-        """
-        Returns the reduced echelon form matrix of self if it has been found.
-        If if has not been found, returns False.
-        :return: False if the reduced echelon form has not been found yet, or
-        the reduced echelon form as a Matrix if it has been found.
-        """
-        if not self.reduced_echelon_form_found:
-            return False
-
-        return self.reduced_echelon_form
-
-    def retrieve_solution(self):
-        """
-        Returns the solution of self if it has been found. If if has not been
-        found, returns False.
-        :return: False if the solution has not been found yet, None if there is
-        no solution, or the solution as a list if it has been found. See the
-        documentation for the find_solution() method for details on the
-        formatting of the list.
-        """
-        if not self.solution_found:
-            return False
-
-        return self.solution
 
     def __str__(self):
         """
@@ -136,7 +94,7 @@ class Matrix:
         :param other: The int or Fraction to be added to an entry in self.
         :param row: The row of the entry to be added to.
         :param col: the column of the entry to be added to.
-        :return: The Matrix with the changed entry
+        :return: The Matrix with the changed entry.
         """
 
         # Ensures that other is a valid type.
@@ -288,6 +246,7 @@ class Matrix:
         Swaps two rows in self. One of the three elementary row operations.
         :param first_row: One of the rows being swapped.
         :param second_row: The other row being swapped.
+        :return: The resulting Matrix.
         """
 
         # Ensures that both rows are valid types.
@@ -300,6 +259,7 @@ class Matrix:
 
         result = self.copy_matrix()
 
+        # Swaps the rows.
         for col in range(self.cols):
             result.matrix[first_row - 1][col], result.matrix[second_row - 1][col] = \
                 result.matrix[second_row - 1][col], result.matrix[first_row - 1][col]
@@ -326,6 +286,7 @@ class Matrix:
         if first_row <= 0 or second_row <= 0:
             raise ValueError
 
+        # Adds the rows together.
         result = self.copy_matrix()
         for col in range(self.cols):
             result.matrix[first_row - 1][col] += \
@@ -352,6 +313,7 @@ class Matrix:
 
         result = self.copy_matrix()
 
+        # Multiplies the rows.
         for i in range(self.cols):
             result.matrix[row - 1][i] *= factor
 
@@ -373,16 +335,18 @@ class Matrix:
 
         # The determinant is only defined for n x n matrices.
         if self.rows != self.cols:
+            self.determinant = None
             self.determinant_found = True
-            return None
+            return self.determinant
 
         # The determinant of a 2 x 2 matrix is ad - bc (a, b, c, d from left
         # to right, top to bottom.
 
         if self.rows == 2:
+            self.determinant = self.matrix[0][0] * self.matrix[1][1] \
+                               - self.matrix[0][1] * self.matrix[1][0]
             self.determinant_found = True
-            return self.matrix[0][0] * self.matrix[1][1] \
-                   - self.matrix[0][1] * self.matrix[1][0]
+            return self.determinant
 
         # If this method is called from anywhere other than
         # gaussian_elimination_internal(), factor will be None. factor is
@@ -392,15 +356,17 @@ class Matrix:
         if factor is None:
             return self.gaussian_elimination_internal(True, True)
 
-        # Computes the determinant by summing the diagonal of the reduced
-        # echelon form matrix and multiplying it by factor. This code can only
-        # be reached if the method is called from
+        # Computes the determinant by multiplying the entries in the diagonal
+        # of the reduced echelon form matrix and multiplying it by factor.
+        # This code can only be reached if the method is called from
         # gaussian_elimination_internal.
         determinant = Fraction(1, 1)
         for i in range(self.rows):
             determinant *= self.matrix[i][i]
         determinant *= factor
 
+        self.determinant = determinant
+        self.determinant_found = True
         return determinant
 
     def find_determinant(self):
@@ -430,10 +396,14 @@ class Matrix:
         parameter, defaults to False.
         :param stop_early_determinant: Whether or not the method stops after
         determining the row echelon form regardless of whether or not there is
-        a solution. Used when calculating determinants.
-        :return: The resulting Matrix, or None if stop_early_determinant is
-        True.
+        a solution. Used when calculating determinants. Optional parameter,
+        defaults to False.
+        :return: The resulting Matrix, or the determinant if
+        stop_early_determinant is True.
         """
+
+        if self.reduced_echelon_form_found:
+            return self.reduced_echelon_form
 
         result = self.copy_matrix()
         col = 0
@@ -445,6 +415,8 @@ class Matrix:
         # a scalar factor.
         det_factor = Fraction(1, 1)
 
+        # Iterates through the rows and columns of the Matrix until reaching
+        # the end of one of them.
         while col < result.cols and row < result.rows:
             # Finds the first row in the current column with a leading entry.
             row_search = row
@@ -482,7 +454,6 @@ class Matrix:
         # Gaussian elimination once an echelon form matrix has been computed.
         if stop_early_determinant:
             self.determinant = result.find_determinant_internal(det_factor)
-            self.determinant_found = True
             return self.determinant
 
         # If stop_early_no_solution is True, checks if the Matrix has no
@@ -520,9 +491,10 @@ class Matrix:
             row += 1
             col += 1
 
-        # Computes the determinant and stores in self.determinant.
-        self.reduced_echelon_form_found = True
+        # Stores the computed reduced echelon form Matrix in
+        # self.reduced_echelon_form.
         self.reduced_echelon_form = result
+        self.reduced_echelon_form_found = True
         return result
 
     def gaussian_elimination(self) -> Matrix:
@@ -530,7 +502,7 @@ class Matrix:
         Returns the reduced row echelon form of self as a Matrix.
         :return: The reduced row echelon form of self as a Matrix.
         """
-        return self.gaussian_elimination()
+        return self.gaussian_elimination_internal()
 
     def find_solution(self):
         """
@@ -545,6 +517,13 @@ class Matrix:
         self.solution.
         :return: None
         """
+
+        # Checks if the solution has already been found. If so, returns it
+        # without redoing all the calculations.
+
+        if self.solution_found:
+            return self.solution
+
         echelon_matrix = self.gaussian_elimination_internal(True)
 
         col = -1
@@ -558,6 +537,7 @@ class Matrix:
             row -= 1
         if not echelon_matrix.matrix[row][col - 1]:
             self.solution = None
+            self.solution_found = True
             return None
 
         row = 0
@@ -603,7 +583,7 @@ class Matrix:
         :return: The solution formatted as a string or None.
         """
 
-        solution = self.retrieve_solution()
+        solution = self.find_solution()
 
         # Deals with the possibility of no solution.
         if self.solution is None:
@@ -659,8 +639,14 @@ class Matrix:
         self has no inverse.
         """
 
-        # If a Matrix is not n x n, it cannot have an inverse.
-        if self.rows != self.cols:
+        # Checks if the inverse has been previously found to avoid wasting time
+        # calculating it again.
+        if self.inverse_found:
+            return self.inverse
+
+        # Checks if the matrix is singular or not n x n. In either case, there
+        # is no inverse.
+        if self.find_determinant() == 0 or self.find_determinant() is None:
             return None
 
         # Creates an n x 2n Matrix with in the left 3 columns and the identity
@@ -675,13 +661,7 @@ class Matrix:
                 else:
                     identity_appended.matrix[row][col] = 0
 
-        ref = identity_appended.gaussian_elimination_internal(False)
-
-        # Checks if the left side of the reduced echelon form matrix is an
-        # identity matrix. If not, returns None.
-        for i in range(self.rows):
-            if ref.matrix[i][i] != 1:
-                return None
+        ref = identity_appended.gaussian_elimination()
 
         inverse = Matrix(self.rows, self.cols)
 
@@ -692,6 +672,7 @@ class Matrix:
             for j in range(inverse.cols):
                 inverse.matrix[i][j] = ref.matrix[i][j + inverse.cols]
 
+        self.inverse_found = True
         return inverse
 
     def store_value(self, value, row: int, col: int):
