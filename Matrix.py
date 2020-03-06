@@ -49,6 +49,18 @@ class Matrix:
         self.solution_found = False
         self.solution = None
 
+        # Calculated by the find_transpose() method. Stored as a Matrix.
+        self.transpose_found = False
+        self.transpose = None
+
+        # Calculated by the find_cofactor_matrix method. Stored as a Matrix.
+        self.cofactor_matrix_found = False
+        self.cofactor_matrix = None
+
+        # Calculated by the find_adjoint_matrix method. Stored as a Matrix.
+        self.adjoint_matrix_found = False
+        self.adjoint_matrix = None
+
     def __bool__(self):
         """
         Defines the boolean representation of a Matrix. A matrix is False if
@@ -578,8 +590,6 @@ class Matrix:
         """
         Takes a solution obtained by find_solution() and returns it as a
         formatted string. If no solution exists, returns None
-        :param solution: The solution. For more details on the format, see the
-        documentation for find_solution().
         :return: The solution formatted as a string or None.
         """
 
@@ -634,7 +644,6 @@ class Matrix:
     def find_inverse(self):
         """
         Returns the inverse of self. If self has no inverse, returns None.
-        Also stores the inverse in self.inverse.
         :return: A Matrix that is the inverse of self if one exists, None if
         self has no inverse.
         """
@@ -674,6 +683,118 @@ class Matrix:
 
         self.inverse_found = True
         return inverse
+
+    def find_transpose(self) -> Matrix:
+        """
+        Returns the transpose of self as a Matrix.
+        :return: The transpose of self as a Matrix.
+        """
+
+        if self.transpose_found:
+            return self.transpose
+
+        # Creates a Matrix of the correct dimensions to store the transpose.
+        result = Matrix(self.cols, self.rows)
+
+        for i in range(self.rows):
+            for j in range(self.cols):
+                result.matrix[j][i] = self.matrix[i][j]
+
+        # Stores the transpose so that it can be retrieved later without
+        # recalculating it and returns it.
+        self.transpose_found = True
+        self.transpose = result
+        return result
+
+    def find_minor(self, row: int, col: int) -> Fraction:
+        """
+        Finds the ij minor of self where i is row and j is col. The minor is a
+        Fraction for all matrices larger than 1 x 1. In the case of a 1 x 1
+        matrix, for which there is no clear definition for the minor, returns
+        None.
+        :param row: i.
+        :param col: j.
+        :return: The ij minor of self as a Fraction or None if self is a 1 x 1
+        matrix.
+        """
+
+        # Ensures that row and col are both ints
+        if not isinstance(row, int) or not isinstance(col, int):
+            raise TypeError
+
+        # Ensures that self is a square matrix.
+        if self.rows != self.cols:
+            raise ValueError
+
+        # Ensures that row and col are both valid rows and cols of self.
+        if not 0 < row <= self.rows or not 0 < col <= self.cols:
+            raise ValueError
+
+        # a 1 x 1 matrix has no clear definition for the minor of its entry.
+        if self.rows == 1:
+            return None
+
+        # Creates a matrix with one less row and col than self that will store
+        # self with row and col removed.
+        row_col_removed = Matrix(self.rows - 1, self.cols - 1)
+
+        # Copies self into row_col_removed, except for the row and col of the
+        # entry having its minor calculated.
+        for i in range(row_col_removed.rows):
+            for j in range(row_col_removed.cols):
+                if i >= row - 1 and j >= col - 1:
+                    row_col_removed.matrix[i][j] = self.matrix[i + 1][j + 1]
+                elif i >= row - 1:
+                    row_col_removed.matrix[i][j] = self.matrix[i + 1][j]
+                elif j >= col - 1:
+                    row_col_removed.matrix[i][j] = self.matrix[i][j + 1]
+                else:
+                    row_col_removed.matrix[i][j] = self.matrix[i][j]
+
+        # Returns the minor.
+        return row_col_removed.find_determinant()
+
+    def find_cofactor_matrix(self) -> Matrix:
+        """
+        Returns the cofactor matrix of self.
+        :return: The cofactor matrix of self as a Matrix.
+        """
+
+        if self.cofactor_matrix_found:
+            return self.cofactor_matrix
+
+        result = Matrix(self.rows, self.cols)
+
+        # Stores the cofactor of each entry of self in the corresponding
+        # positions in result. The cofactor is the minor of the entry
+        # multiplied by -1 if the row and col have different parity, and 1 if
+        # they have the same parity.
+        for row in range(self.rows):
+            for col in range(self.cols):
+                result.matrix[row][col] = self.find_minor(row, col) \
+                                          * (-1) ** ((row + col) & 1)
+
+        # Stores the cofactor matrix so that it can be retrieved later without
+        # recalculating it.
+        self.cofactor_matrix = result
+        self.cofactor_matrix_found = True
+        return result
+
+    def find_adjoint_matrix(self) -> Matrix:
+        """
+        Returns the adjoint matrix of self as a Matrix.
+        :return: The adjoint matrix of self as a Matrix.
+        """
+
+        if self.adjoint_matrix_found:
+            return self.adjoint_matrix
+
+        result = self.copy_matrix()
+        result = result.cofactor_matrix
+
+        self.adjoint_matrix = result.find_transpose()
+        self.adjoint_matrix_found = True
+        return self.adjoint_matrix
 
     def store_value(self, value, row: int, col: int):
         """
