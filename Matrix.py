@@ -771,7 +771,7 @@ class Matrix:
         # they have the same parity.
         for row in range(self.rows):
             for col in range(self.cols):
-                result.matrix[row][col] = self.find_minor(row, col) \
+                result.matrix[row][col] = self.find_minor(row + 1, col + 1) \
                                           * (-1) ** ((row + col) & 1)
 
         # Stores the cofactor matrix so that it can be retrieved later without
@@ -790,7 +790,7 @@ class Matrix:
             return self.adjoint_matrix
 
         result = self.copy_matrix()
-        result = result.cofactor_matrix
+        result = result.find_cofactor_matrix()
 
         self.adjoint_matrix = result.find_transpose()
         self.adjoint_matrix_found = True
